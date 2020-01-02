@@ -54,13 +54,55 @@ class MainWin( wx.Frame ):
 		self.errors = []
 		
 		self.filehistory = wx.FileHistory(16)
-		self.config = wx.Config(
-			appName="CallupSeedingMgr",
-			vendorName="Edward.Sitarski@gmail.com",
-			style=wx.CONFIG_USE_LOCAL_FILE
+
+		dataDir = Utils.getHomeDir()
+		configFileName = os.path.join(dataDir, 'CallupSeedingMgr.cfg')
+		self.config = wx.Config(appName="CallupSeedingMgr",
+								vendorName="SmartCyclingSolutions",
+								localFilename=configFileName
 		)
+
 		self.filehistory.Load(self.config)
-		
+
+		ID_MENU_UPDATE = wx.NewIdRef()
+		ID_MENU_HELP = wx.NewIdRef()
+		self.menuBar = wx.MenuBar(wx.MB_DOCKABLE)
+		if 'WXMAC' in wx.Platform:
+			self.appleMenu = self.menuBar.OSXGetAppleMenu()
+			self.appleMenu.SetTitle("CallupSeedingMgr")
+
+			self.appleMenu.Insert(0, wx.ID_ABOUT, "&About")
+
+			self.Bind(wx.EVT_MENU, self.OnAboutBox, id=wx.ID_ABOUT)
+
+			self.editMenu = wx.Menu()
+			self.editMenu.Append(wx.MenuItem(self.editMenu, ID_MENU_UPDATE,"&Update"))
+
+			self.Bind(wx.EVT_MENU, self.doUpdate, id=ID_MENU_UPDATE)
+			self.menuBar.Append(self.editMenu, "&Edit")
+
+			self.helpMenu = wx.Menu()
+			self.helpMenu.Append(wx.MenuItem(self.helpMenu, ID_MENU_HELP, "&Help"))
+
+			self.menuBar.Append(self.helpMenu, "&Help")
+			self.Bind(wx.EVT_MENU, self.onTutorial, id=ID_MENU_HELP)
+
+		else:
+			self.fileMenu = wx.Menu()
+			self.fileMenu.Append(wx.MenuItem(self.fileMenu, ID_MENU_UPDATE,"&Update"))
+			self.fileMenu.Append(wx.ID_EXIT)
+			self.Bind(wx.EVT_MENU, self.doUpdate, id=ID_MENU_UPDATE)
+			self.Bind(wx.EVT_MENU, self.onClose, id=wx.ID_EXIT)
+			self.menuBar.Append(self.fileMenu, "&File")
+			self.helpMenu = wx.Menu()
+			self.helpMenu.Insert(0, wx.ID_ABOUT, "&About")
+			self.helpMenu.Insert(1, ID_MENU_HELP, "&Help")
+			self.Bind(wx.EVT_MENU, self.OnAboutBox, id=wx.ID_ABOUT)
+			self.Bind(wx.EVT_MENU, self.onTutorial, id=ID_MENU_HELP)
+			self.menuBar.Append(self.helpMenu, "&Help")
+
+		self.SetMenuBar(self.menuBar)
+
 		inputBox = wx.StaticBox( self, label=_('Input') )
 		inputBoxSizer = wx.StaticBoxSizer( inputBox, wx.VERTICAL )
 		self.fileBrowse = filebrowse.FileBrowseButtonWithHistory(
@@ -179,7 +221,41 @@ class MainWin( wx.Frame ):
 		mainSizer.Add( outputBoxSizer, flag=wx.EXPAND|wx.ALL, border = 4 )
 
 		self.SetSizer( mainSizer )
-		
+
+	def onClose( self, event ):
+			wx.Exit()
+
+ 
+	def OnAboutBox(self, e):
+			description = """CallupSeedingMgr is an Seeding Manager for CrossMgr
+	"""
+
+			licence = """CallupSeedingMgr free software; you can redistribute 
+	it and/or modify it under the terms of the GNU General Public License as 
+	published by the Free Software Foundation; either version 2 of the License, 
+	or (at your option) any later version.
+
+	CallupSeedingMgr is distributed in the hope that it will be useful, 
+	but WITHOUT ANY WARRANTY; without even the implied warranty of 
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+	See the GNU General Public License for more details. You should have 
+	received a copy of the GNU General Public License along with File Hunter; 
+	if not, write to the Free Software Foundation, Inc., 59 Temple Place, 
+	Suite 330, Boston, MA  02111-1307  USA"""
+
+			info = wx.adv.AboutDialogInfo()
+
+			crossMgrPng = Utils.getImageFolder() + '/CallupSeedingMgr.png'
+			info.SetIcon(wx.Icon(crossMgrPng, wx.BITMAP_TYPE_PNG))
+			info.SetName('CallupSeedingMgr')
+			info.SetVersion(AppVerName.split(' ')[1])
+			info.SetDescription(description)
+			info.SetCopyright('(C) 2020 Edward Sitarski')
+			info.SetWebSite('http://www.sites.google.com/site/crossmgrsoftware/')
+			info.SetLicence(licence)
+
+			wx.adv.AboutBox(info, self)
+
 	def onTutorial( self, event ):
 		if not Utils.MessageOKCancel( self, u"\n".join( [
 					_("Launch the CallupSeedingMgr Tutorial."),

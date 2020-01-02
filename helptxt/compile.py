@@ -4,7 +4,7 @@ import os
 import codecs
 import zipfile
 import shutil
-import StringIO
+from io import StringIO
 from contextlib import contextmanager
 
 HtmlDocFolder = 'htmldoc'
@@ -48,9 +48,9 @@ def CompileHelp( dir = '.' ):
 			links = f.read()
 			
 		for fname in glob.glob("./*.txt"):
-			print fname, '...'
+			print(fname, '...')
 			with codecs.open(fname, 'r', encoding='utf8') as f:
-				input = StringIO.StringIO()
+				input = StringIO()
 				input.write( links )
 				input.write( f.read() )
 				

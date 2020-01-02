@@ -1,0 +1,12 @@
+.pyw.spec
+build/
+env/
+dist/
+release/
+htmlindex/
+__pycache__/
+CallupSeedingMgr.spec
+htmldoc
+helptxt/CrossMgrDocHtml.zip
+compile.TempPoint.ps1
+inno_setup.txt

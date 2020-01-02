@@ -92,20 +92,45 @@ def AdjustGridSize( grid, rowsRequired = None, colsRequired = None ):
 		elif d < 0:
 			grid.AppendCols( -d )
 
-try:
-	dirName = os.path.dirname(os.path.abspath(__file__))
-except:
-	dirName = os.path.dirname(os.path.abspath(sys.argv[0]))
+if 'WXMAC' in wx.Platform:
+	try:
+		topdirName = os.environ['RESOURCEPATH']
+	except:
+		topdirName = os.path.dirname(os.path.realpath(__file__))
+	if os.path.isdir( os.path.join(topdirName, 'images') ):
+		dirName = topdirName
+	else:
+		dirName = os.path.normpath(topdirName + '/../Resources/')
+	if not os.path.isdir(dirName):
+		dirName = os.path.normpath(topdirName + '/../../Resources/')
+	if not os.path.isdir(dirName):
+		raise Exception("Resource Directory does not exist:" + dirName)
+		
+else:
+	try:
+		dirName = os.path.dirname(os.path.abspath(__file__))
+	except:
+		dirName = os.path.dirname(os.path.abspath(sys.argv[0]))
+	
+	if os.path.basename(dirName) in ['library.zip', 'MainWin.exe', 'CrossMgrCallUpSeedingMgr.exe']:
+		dirName = os.path.dirname(dirName)
+	if 'CrossMgrSeedingMgr?' in os.path.basename(dirName):
+		dirName = os.path.dirname(dirName)
+	if not os.path.isdir( os.path.join(dirName, 'images') ):
+		dirName = os.path.dirname(dirName)
 
-if os.path.basename(dirName) == 'library.zip':
-	dirName = os.path.dirname(dirName)
+	if os.path.isdir( os.path.join(dirName, 'images') ):
+		pass
+	elif os.path.isdir( '/usr/local/images' ):
+		dirName = '/usr/local'
+
 imageFolder = os.path.join(dirName, 'images')
 htmlFolder = os.path.join(dirName, 'html')
 htmlDocFolder = os.path.join(dirName, 'htmldoc')
 
 import webbrowser
-if sys.platform == 'darwin':
-	webbrowser.register("chrome", None, webbrowser.MacOSXOSAScript('chrome'), -1)
+if 'WXMAC' in wx.Platform:
+	webbrowser.register("chrome", None, webbrowser.MacOSXOSAScript('chrome'))
 
 def LaunchApplication( fnames ):
 	for fname in (fnames if isinstance(fnames, list) else [fnames]):
