@@ -1,6 +1,5 @@
 import os
 import sys
-import xlwt
 import datetime
 import Utils
 import random

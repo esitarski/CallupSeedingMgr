@@ -7,7 +7,6 @@ import os
 import re
 import datetime
 import traceback
-import xlwt
 import webbrowser
 from optparse import OptionParser
 from roundbutton import RoundButton
