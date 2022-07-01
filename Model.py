@@ -104,6 +104,7 @@ def abilityToNumeric( ability ):
 	if ability is not None:
 		if isinstance( ability, float ):
 			ability = int( ability )
+		
 		ability = str( ability )
 		if re.search('[0-9]', ability):
 			# Use the number contained in the ability.
@@ -115,10 +116,25 @@ def abilityToNumeric( ability ):
 			# Handle case of Grade A, Grade B, etc.
 			return ord(ability[-1:]) - ord('A') + 1
 		
-	return None
+	return 999999
+	
+def replaceprefix( s, old, new ):
+	return new + s[len(old):] if s.startswith(old) else s
+	
+def formatAbility( ability ):
+	if ability is not None:
+		if isinstance( ability, float ):
+			ability = int( ability )
+		
+		ability = re.sub( r'\s', '', str(ability) ).upper()
+		ability = replaceprefix( ability, 'GRADE', 'Grade ' )
+		ability = replaceprefix( ability, 'CATEGORY', 'Category ' )
+		ability = replaceprefix( ability, 'CAT', 'Cat ' )
+		
+	return ability
 
 class Result:
-	ByPoints, ByPosition = (0, 1)
+	ByPoints, ByPosition, ByAbilityPoints, ByAbilityPosition = (0, 1, 2, 3)
 	
 	Fields = (
 		'bib',
@@ -142,7 +158,7 @@ class Result:
 		'row'
 	)
 	NumericFields = set([
-		'bib', 'age', 'points', 'position', 'ability'
+		'bib', 'age', 'points', 'position'
 	])
 	KeyFields = set([
 		'first_name', 'last_name',
@@ -158,12 +174,12 @@ class Result:
 		
 		for f in self.Fields:
 			setattr( self, f, kwargs.get(f, None) )
-			
-		if self.ability is not None:
-			self.ability = abilityToNumeric( self.ability )
-			
+		
 		if self.license is not None:
 			self.license = '{}'.format(self.license).strip()
+			
+		if self.ability is not None:
+			self.ability = formatAbility( self.ability )
 			
 		if self.row:
 			try:
@@ -317,17 +333,25 @@ class Result:
 		return '{} {}'.format( self.first_name, self.last_name )
 	
 	def get_key( self ):
-		if self.cmp_policy == self.ByPoints:
+		if self.cmp_policy == self.ByAbilityPoints:
+			return (abilityToNumeric(self.ability), -(self.points or 0))
+		elif self.cmp_policy == self.ByAbilityPosition:
+			return (abilityToNumeric(self.ability), self.position or 99999999)
+		elif self.cmp_policy == self.ByPoints:
 			return -(self.points or 0)
 		elif self.cmp_policy == self.ByPosition:
-			return self.position or 999999
+			return self.position or 99999999
 		assert False, 'Invalid cmp_policy'
 		
 	def get_sort_key( self ):
 		return (self.get_key(), self.row)
 		
 	def get_value( self ):
-		if self.cmp_policy == self.ByPoints:
+		if self.cmp_policy == self.ByAbilityPoints:
+			return '{}:{}'.format(self.ability or '', self.points or '')
+		elif self.cmp_policy == self.ByAbilityPosition:
+			return '{}:{}'.format(self.ability or '', self.position or '')
+		elif self.cmp_policy == self.ByPoints:
 			return self.points
 		elif self.cmp_policy == self.ByPosition:
 			return self.position
@@ -388,17 +412,29 @@ class FindResult:
 		self.source = source
 		self.soundalike = soundalike
 	
+	def is_matched( self ):
+		return len(self.matches) == 1
+	
 	def get_key( self ):
-		if len(self.matches) == 1:
+		if self.is_matched():
 			return self.matches[0].get_key()
-		return 0 if self.source.cmp_policy == Result.ByPoints else 999999
+		if self.source.cmp_policy == Result.ByAbilityPoints:
+			return (999999, 0)
+		if self.source.cmp_policy == Result.ByAbilityPosition:
+			return (999999, 999999)
+		if self.source.cmp_policy == Result.ByPoints:
+			return 0
+		elif self.source.cmp_policy == Result.ByPosition:
+			return 999999
 	
 	def get_sort_key( self ):
+		key = self.get_key()
 		try:
 			row = self.matches[0].row
 		except:
 			row = 999999
-		return (self.get_key(), row)
+		# Add the row as a sort criteria.
+		return key + tuple([row]) if isinstance(key, tuple) else (key, row)
 	
 	def get_value( self ):
 		if not self.matches:
@@ -495,13 +531,13 @@ class Source:
 			self._field_from_index[i] = i[6:] if i.startswith('by_mp_') else i[3:]
 			return self._field_from_index[i]
 		
-	def get_cmp_policy_field( self ):
-		if self.cmp_policy == Result.ByPoints:
-			return 'points'
-		elif self.cmp_policy == Result.ByPosition:
-			return 'position'
-		else:
-			return None
+	def get_cmp_policy_name( self ):
+		return {
+			Result.ByAbilityPoints:		'Ability-Points',
+			Result.ByAbilityPosition:	'Ability-Position',
+			Result.ByPoints:			'Points',
+			Result.ByPosition:			'Position',
+		}.get( self.cmp_policy, None )
 		
 	def read( self, reader ):
 		header_fields = ['name'] + list(Result.Fields)
@@ -565,14 +601,24 @@ class Source:
 		
 			self.add( result )
 		
-		self.cmp_policy = Result.ByPoints if 'points' in self.hasField else Result.ByPosition
+		if 'ability' in self.hasField:
+			if 'points' in self.hasField:
+				self.cmp_policy = Result.ByAbilityPoints
+			else:
+				self.cmp_policy = Result.ByAbilityPosition
+		else:
+			if 'points' in self.hasField:
+				self.cmp_policy = Result.ByPoints
+			else:
+				self.cmp_policy = Result.ByPosition
+		
 		for r in self.results:
 			r.cmp_policy = self.cmp_policy
 		
 		return errors
 	
 	def get_ordered_fields( self ):
-		return tuple(f for f in Result.Fields if f in self.hasField and f not in ('points', 'position', 'row'))
+		return tuple(f for f in Result.Fields if f in self.hasField and f not in ('ability','points', 'position', 'row'))
 	
 	def randomize_positions( self ):
 		positions = list(range( 1, len(self.results)+1 ))
@@ -640,17 +686,17 @@ class Source:
 	def match_indices( self, search, indices ):
 		# Look for a set intersection of one element between all source criteria.
 		
-		if self.debug: print ( 'match_indices: searchKeys=', indices )
+		if self.debug: print( 'match_indices: searchKeys=', indices )
 		
 		soundalike = False
 		setCur = None
 		for idx_name in indices:
-			if self.debug: print ( "match_indices: matching on key:", idx_name )
+			if self.debug: print( "match_indices: matching on key:", idx_name )
 			idx = getattr( self, idx_name )
 			v = getattr( search, self.field_from_index(idx_name), None )
 			if not v or not idx:
 				setCur = None
-				if self.debug: print ( 'match_indices: missing attribute' )
+				if self.debug: print( 'match_indices: missing attribute' )
 				break
 
 			try:
@@ -658,7 +704,7 @@ class Source:
 			except:
 				pass
 				
-			if self.debug: print ( 'match_indices: value=', v )
+			if self.debug: print( 'match_indices: value=', v )
 			
 			found = set()
 			if idx_name.startswith( 'by_mp_' ):
@@ -675,21 +721,21 @@ class Source:
 				setCur &= set(found)
 			
 			if not setCur:
-				if self.debug: print ( "match_indices: match failed. found=", found )
+				if self.debug: print( "match_indices: match failed. found=", found )
 				break
 			
-			if self.debug: print ( "matched:", setCur )
+			if self.debug: print( "matched:", setCur )
 		
 		return FindResult( search, setCur, self, soundalike )
 	
 	def find( self, search ):
 		''' Returns (result, messages) - result will be None if no match. '''
 		if self.debug:
-			print ( '-' * 60 )
-			print ( 'sheet_name:', self.sheet_name )
-			print ( 'find: search=', search, hasattr( search, 'last_name'), hasattr( search, 'uci_id' ), getattr( search, 'uci_id' ) )
-			print ( self.by_last_name.get('BELHUMEUR', None) )
-			print ( self.by_first_name.get('FELIX', None) )
+			print( '-' * 60 )
+			print( 'sheet_name:', self.sheet_name )
+			print( 'find: search=', search, hasattr( search, 'last_name'), hasattr( search, 'uci_id' ), getattr( search, 'uci_id' ) )
+			print( self.by_last_name.get('BELHUMEUR', None) )
+			print( self.by_first_name.get('FELIX', None) )
 
 		# First check for a common UCI ID.  If so, attempt to match it exactly and stop.
 		if self.useUciId:
@@ -709,7 +755,7 @@ class Source:
 		)
 		for pi in perfectIndices:
 			if self.has_all_index_fields(search, pi):
-				if self.debug: print ( 'found index:', pi )
+				if self.debug: print( 'found index:', pi )
 				findResult = self.match_indices( search, pi )
 				if findResult.get_status() == FindResult.Success:
 					return findResult
@@ -724,7 +770,7 @@ class Source:
 			
 			for pi in potentialIndices:
 				if self.has_all_index_fields(search, pi):
-					if self.debug: print ( 'found index:', pi )
+					if self.debug: print( 'found index:', pi )
 					indices = pi
 					break
 		
@@ -740,10 +786,10 @@ class Source:
 			if not self.soundalike and any(i.startswith('by_mp_') for i in pi):
 				continue
 			if self.has_all_index_fields(search, pi):
-				if self.debug: print ( 'matching on fields:', pi )
+				if self.debug: print( 'matching on fields:', pi )
 				findResult = self.match_indices( search, pi )
 				if findResult.get_status() != findResult.NoMatch:
-					if self.debug: print ( 'success', findResult )
+					if self.debug: print( 'success', findResult )
 					return findResult
 		
 		return FindResult( search, [], self, False )
@@ -758,15 +804,15 @@ class ResultCollection:
 if __name__ == '__main__':
 	s = Source( 'CallupTest.xlsx', '2014 Result' )
 	# errors = s.read( GetExcelReader(self.fname) )
-	print ( s.by_mp_last_name )
+	print( s.by_mp_last_name )
 	sys.exit()
 	
 	#for r in s.results:
-	#	print ( r )
+	#	print( r )
 	for k, v in sorted( ((k, v) for k, v in s.by_mp_last_name.items()), key=operator.itemgetter(0) ):
-		print ( '{}: {}'.format(k, ', '.join( Utils.removeDiacritic(r.full_name) for r in v )) )
+		print( '{}: {}'.format(k, ', '.join( Utils.removeDiacritic(r.full_name) for r in v )) )
 	for k, v in sorted( ((k, v) for k, v in s.by_mp_first_name.items()), key=operator.itemgetter(0) ):
-		print ( '{}: {}'.format(k, ', '.join( Utils.removeDiacritic(r.full_name) for r in v )) )
+		print( '{}: {}'.format(k, ', '.join( Utils.removeDiacritic(r.full_name) for r in v )) )
 		
 	for r in s.results:
 		for p_last in doublemetaphone(r.last_name.replace('-','').encode()):
@@ -777,7 +823,7 @@ if __name__ == '__main__':
 				p_first_set = s.by_mp_first_name[p_first]
 				p_last_first_set = p_last_set & p_first_set
 				if len(p_last_first_set) > 1:
-					print ( ', '.join( '({}, {}, {})'.format(
+					print( ', '.join( '({}, {}, {})'.format(
 							Utils.removeDiacritic(rr.full_name), Utils.removeDiacritic(rr.nation_code), rr.age,
 						)
 						for rr in p_last_first_set ) )

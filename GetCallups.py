@@ -8,7 +8,7 @@ from Excel import GetExcelReader
 
 RegistrationSheet = 'Registration'
 
-def GetCallups( fname, soundalike=True, useUciId=True, useLicense=True, callbackfunc=None, callbackupdate=None ):
+def GetCallups( fname, soundalike=True, useUciId=True, useLicense=True, callbackfunc=None, callbackupdate=None, cycleLast=None ):
 
 	if callbackupdate: callbackupdate( _('Reading spreadsheet...') )
 	reader = GetExcelReader( fname )
@@ -28,8 +28,7 @@ def GetCallups( fname, soundalike=True, useUciId=True, useLicense=True, callback
 	registration = Source( fname, RegistrationSheet, False )
 	registrationErrors = registration.read( reader )
 	
-	if callbackfunc:
-		callbackfunc( [registration], [registrationErrors] )
+	if callbackfunc: callbackfunc( [registration], [registrationErrors] )
 		
 	sources = []
 	errors = []
@@ -58,6 +57,54 @@ def GetCallups( fname, soundalike=True, useUciId=True, useLicense=True, callback
 		registration.results,
 		key = lambda reg: tuple(r.get_sort_key() for r in reg.result_vector)
 	)
+
+	# Apply criteria cycling options.
+	if cycleLast is not None and callup_order:
+		callup_order_cycle = []
+		cycleGroups = [[] for i in range(cycleLast)]
+		noCriteria = []
+		# Separate the cycling criteria into groups.
+		for row, reg in enumerate(callup_order):
+			# Nothing matches anywhere - no criteria.
+			if all( r.get_status() == r.NoMatch for r in reg.result_vector[:-1] ):
+				noCriteria.append( reg )
+				continue
+			
+			iCycleLastBegin = len(reg.result_vector) - 1 - cycleLast
+			
+			# If anyting matches before cycleLast, this isn't in a cycle group.
+			if any( r.is_matched() for r in reg.result_vector[:iCycleLastBegin] ):
+				callup_order_cycle.append( reg )
+				continue
+			
+			# Find the cycle group for this result.
+			matched = False
+			for iLast in range(cycleLast):
+				if reg.result_vector[iCycleLastBegin+iLast].is_matched():
+					cycleGroups[iLast].append( reg )
+					matched = True
+					break
+			assert matched
+			
+		# Remove empty cycle groups.
+		cycleGroups = [cg for cg in cycleGroups if cg]
+
+		# Cycle through the groups until there is nothing left.
+		# Reverse the groups so we can process them efficiently.
+		for cg in cycleGroups:
+			cg.reverse()
+		
+		iCycleCur = 0
+		while cycleGroups:
+			callup_order_cycle.append( cycleGroups[iCycleCur].pop() )
+			if not cycleGroups[iCycleCur]:
+				cycleGroups.pop( iCycleCur )
+			iCycleCur += 1
+			if iCycleCur >= len(cycleGroups):
+				iCycleCur = 0
+			
+		callup_order_cycle.extend( noCriteria )
+		callup_order = callup_order_cycle
 
 	# Randomize riders with no criteria.
 	for i_random, reg in enumerate(callup_order):

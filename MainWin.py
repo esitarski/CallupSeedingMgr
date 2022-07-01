@@ -143,7 +143,15 @@ class MainWin( wx.Frame ):
 				_("Seeding: Highest ranked LAST (Time Trials)"),
 			],
 		)
+		self.cycleLabel = wx.StaticText(self, label=_('Cycle Criteria'))
+		self.cycle = wx.Choice( self, choices=(_('None'), _('Last 2'), _('Last 3'), _('Last 4')) )
+		self.cycle.Bind( wx.EVT_CHOICE, lambda w: self.doUpdate() )
+		cycleSizer = wx.BoxSizer( wx.HORIZONTAL )
+		cycleSizer.Add( self.cycleLabel, flag=wx.ALIGN_CENTRE_VERTICAL )
+		cycleSizer.Add( self.cycle, flag=wx.LEFT, border=2 )
+		
 		verticalControlSizer.Add( self.callupSeedingRB, flag=wx.EXPAND|wx.ALL, border=4 )
+		verticalControlSizer.Add( cycleSizer, flag=wx.EXPAND|wx.ALL, border=4 )
 		verticalControlSizer.Add( wx.StaticText(self, label=_('Riders with no criteria will be sequenced randomly.')), flag=wx.ALL, border=4 )
 		
 		horizontalControlSizer.Add( verticalControlSizer, flag=wx.EXPAND )
@@ -414,8 +422,8 @@ class MainWin( wx.Frame ):
 		def insert_source_info( source, errors, add_value_field=True ):
 			idx = self.sourceList.InsertItem( 999999, source.sheet_name )
 			fields = source.get_ordered_fields()
-			if add_value_field and source.get_cmp_policy_field():
-				fields = [source.get_cmp_policy_field()] + list(fields)
+			if add_value_field and source.get_cmp_policy_name():
+				fields = [source.get_cmp_policy_name()] + list(fields)
 			self.sourceList.SetItem( idx, 1, ', '.join( make_title(f) for f in fields ) )
 			match_fields = source.get_match_fields(sources[-1]) if source != sources[-1] else []
 			self.sourceList.SetItem( idx, 2, ', '.join( make_title(f) for f in match_fields ) )
@@ -433,10 +441,16 @@ class MainWin( wx.Frame ):
 
 	def callbackUpdate( self, message ):
 		pass
-		
+	
+	def getCycleLast( self ):
+		selection = self.cycle.GetSelection()
+		if selection == wx.NOT_FOUND:
+			return None
+		return selection + 1 if selection >= 1 else None
+	
 	def doUpdate( self, event=None, fnameNew=None ):
 		try:
-			self.fname = (fnameNew or event.GetString() or self.fileBrowse.GetValue())
+			self.fname = fnameNew or (event and event.GetString()) or self.fileBrowse.GetValue()
 		except:
 			self.fname = ''
 		
@@ -470,6 +484,7 @@ class MainWin( wx.Frame ):
 				useLicense = self.getUseLicense(),
 				callbackfunc = self.updateSourceList,
 				callbackupdate = self.callbackUpdate,
+				cycleLast = self.getCycleLast(),
 			)
 		except Exception as e:
 			traceback.print_exc()
