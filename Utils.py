@@ -39,7 +39,7 @@ def removeDiacritic( s ):
 	without any diacritical marks.
 	'''
 	try:
-		return unicodedata.normalize('NFKD', u'{}'.format(s)).encode('ASCII', 'ignore').decode()
+		return unicodedata.normalize('NFKD', '{}'.format(s)).encode('ASCII', 'ignore').decode()
 	except:
 		return s
 		
@@ -134,7 +134,7 @@ if 'WXMAC' in wx.Platform:
 
 def LaunchApplication( fnames ):
 	for fname in (fnames if isinstance(fnames, list) else [fnames]):
-		if os.name is 'nt':
+		if os.name == 'nt':
 			subprocess.call(('cmd', '/C', 'start', '', fname))
 		elif sys.platform.startswith('darwin'):
 			subprocess.call(('open', fname))
@@ -161,11 +161,11 @@ def disable_stdout_buffering():
 		
 def logCall( f ):
 	def _getstr( x ):
-		return u'{}'.format(x) if not isinstance(x, wx.Object) else u'<<{}>>'.format(x.__class__.__name__)
+		return '{}'.format(x) if not isinstance(x, wx.Object) else '<<{}>>'.format(x.__class__.__name__)
 	
 	def new_f( *args, **kwargs ):
-		parameters = [_getstr(a) for a in args] + [ u'{}={}'.format( key, _getstr(value) ) for key, value in kwargs.items() ]
-		writeLog( 'call: {}({})'.format(f.__name__, removeDiacritic(u', '.join(parameters))) )
+		parameters = [_getstr(a) for a in args] + [ '{}={}'.format( key, _getstr(value) ) for key, value in kwargs.items() ]
+		writeLog( 'call: {}({})'.format(f.__name__, removeDiacritic(', '.join(parameters))) )
 		return f( *args, **kwargs)
 	return new_f
 	

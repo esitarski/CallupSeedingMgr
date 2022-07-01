@@ -51,7 +51,7 @@ def CallupResultsToGrid( grid, registration_headers, callup_headers, callup_resu
 	attr.SetReadOnly()
 	attr.SetTextColour( wx.WHITE )
 	grid.SetColAttr( grid.GetNumberCols()-1, attr )
-	grid.SetColLabelValue( grid.GetNumberCols()-1, u'' )
+	grid.SetColLabelValue( grid.GetNumberCols()-1, '' )
 	
 	successSoundalikeColour = wx.Colour(255, 255, 0)
 	multiMatchColour = wx.Colour(255,140,0)
@@ -90,26 +90,26 @@ def CallupResultsToGrid( grid, registration_headers, callup_headers, callup_resu
 				pass
 			
 			if v is None:
-				grid.SetCellValue( row, col, u'' )
+				grid.SetCellValue( row, col, '' )
 				continue
 				
 			try:
-				grid.SetCellValue( row, col, u'{:g}'.format(v) )
+				grid.SetCellValue( row, col, '{:g}'.format(v) )
 			except ValueError:
 				if c == last_name_col:
-					v = u'{}'.format(v).upper()
+					v = '{}'.format(v).upper()
 				elif c == uci_id_col:
-					v = Model.format_uci_id( u'{}'.format(v) )
+					v = Model.format_uci_id( '{}'.format(v) )
 				else:
-					v = u'{}'.format( v )
+					v = '{}'.format( v )
 				grid.SetCellValue( row, col, v )
 		
 		# Record the row index in a hidden column so we can recover the original results.
-		grid.SetCellValue( row, grid.GetNumberCols()-1, u'{}'.format(row if is_callup else len_callup_results - row - 1) )
+		grid.SetCellValue( row, grid.GetNumberCols()-1, '{}'.format(row if is_callup else len_callup_results - row - 1) )
 	
 	if not is_callup:
 		for row in range(grid.GetNumberRows()):
-			grid.SetRowLabelValue( row, u'{}'.format(grid.GetNumberRows() - row) )
+			grid.SetRowLabelValue( row, '{}'.format(grid.GetNumberRows() - row) )
 	
 	grid.AutoSize()
 	grid.SetColSize( grid.GetNumberCols()-1, 0 )

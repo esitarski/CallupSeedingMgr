@@ -9,7 +9,7 @@ from Model import Source, Result
 from GetCallups import make_title
 
 def random_license():
-	return u''.join( 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[random.randint(0,25)] for i in range(6) )
+	return ''.join( 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[random.randint(0,25)] for i in range(6) )
 
 def random_uci_id():
 	id = '9{}'.format(''.join( random.choice('0123456789') for i in range(8)) )
@@ -30,8 +30,8 @@ def MakeExampleExcel( include_uci_points=True, include_national_points=True, inc
 
 	uci_sample = random.sample( uci_points.results, 20 )
 	
-	common_first_names = u'Léopold Grégoire Aurélien Rémi Léandre Thibault Kylian Nathan Lucas Enzo Léo Louis Hugo Gabriel Ethan Mathis Jules Raphaël Arthur Théo Noah Timeo Matheo Clément Maxime Yanis Maël'.split()
-	common_last_names = u'Tisserand Lavergne Guignard Parmentier Evrard Leclerc Martin Bernard Dubois Petit Durand Leroy Moreau Simon Laurent Lefevre Roux Fournier Dupont'.split()
+	common_first_names = 'Léopold Grégoire Aurélien Rémi Léandre Thibault Kylian Nathan Lucas Enzo Léo Louis Hugo Gabriel Ethan Mathis Jules Raphaël Arthur Théo Noah Timeo Matheo Clément Maxime Yanis Maël'.split()
+	common_last_names = 'Tisserand Lavergne Guignard Parmentier Evrard Leclerc Martin Bernard Dubois Petit Durand Leroy Moreau Simon Laurent Lefevre Roux Fournier Dupont'.split()
 	
 	other_sample = []
 	for i in range(20):
@@ -71,10 +71,10 @@ def MakeExampleExcel( include_uci_points=True, include_national_points=True, inc
 			fit_sheet.write( 0, c, header )
 		for r, result in enumerate(uci_points.results):
 			row = r + 1
-			fit_sheet.write( row, 0, u'{}'.format(row) )
-			fit_sheet.write( row, 1, result.uci_id if result.uci_id else u'' )
-			fit_sheet.write( row, 2, u'{} {}'.format(result.last_name.upper(), result.first_name) )
-			fit_sheet.write( row, 3, result.team_code if result.team_code else u'' )
+			fit_sheet.write( row, 0, '{}'.format(row) )
+			fit_sheet.write( row, 1, result.uci_id if result.uci_id else '' )
+			fit_sheet.write( row, 2, '{} {}'.format(result.last_name.upper(), result.first_name) )
+			fit_sheet.write( row, 3, result.team_code if result.team_code else '' )
 			fit_sheet.write( row, 4, result.age )
 			fit_sheet.write( row, 5, result.points )
 

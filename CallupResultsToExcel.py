@@ -71,9 +71,9 @@ def CallupResultsToExcel( fname_excel, registration_headers, callup_headers, cal
 				fit_sheet.write( rowNum, col, v, date_format )
 			else:
 				if c == last_name_col:
-					v = u'{}'.format(v).upper()
+					v = '{}'.format(v).upper()
 				elif c == uci_id_col:
-					v = Model.format_uci_id( u'{}'.format(v) )
+					v = Model.format_uci_id( '{}'.format(v) )
 				fit_sheet.write( rowNum, col, v )
 			
 			if findResult and findResult.get_status() != findResult.NoMatch:

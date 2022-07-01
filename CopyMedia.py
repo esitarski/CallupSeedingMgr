@@ -13,7 +13,7 @@ def NeedsUpdating( srcFName, destFName ):
 	
 	return srcStat.st_mtime > destStat.st_mtime or srcStat.st_size != destStat.st_size
 
-def CopyMedia( src=u'.', dest=None ):
+def CopyMedia( src='.', dest=None ):
 	extensions = set( ['.py', '.html', '.gif', '.png', '.iss', '.txt'] )
 	
 	if dest is None:

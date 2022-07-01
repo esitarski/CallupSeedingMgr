@@ -23,12 +23,12 @@ countryTranslations = { k.upper(): v for k, v in countryTranslations.items() }
 specialNationCodes = uci_country_codes
 specialNationCodes = { k.upper(): v for k, v in specialNationCodes.items() }
 
-non_digits = re.compile( u'[^0-9]' )
-all_quotes = re.compile( u"[\u2019\u0027\u2018\u201C\u201D`\"]" )
-all_stars = re.compile( u"[*\u2605\u22C6]" )
+non_digits = re.compile( '[^0-9]' )
+all_quotes = re.compile( "[\u2019\u0027\u2018\u201C\u201D`\"]" )
+all_stars = re.compile( "[*\u2605\u22C6]" )
 def normalize_name( s ):
-	s = all_quotes.sub( u"'", u'{}'.format(s).replace(u'(JR)',u'') )
-	s = all_stars.sub( u"", s )
+	s = all_quotes.sub( "'", '{}'.format(s).replace('(JR)','') )
+	s = all_stars.sub( "", s )
 	return s.strip()
 	
 def normalize_name_lookup( s ):
@@ -36,8 +36,8 @@ def normalize_name_lookup( s ):
 
 def format_uci_id( uci_id ):
 	if not uci_id:
-		return u''
-	return u' '.join( uci_id[i:i+3] for i in range(0, len(uci_id), 3) )
+		return ''
+	return ' '.join( uci_id[i:i+3] for i in range(0, len(uci_id), 3) )
 	
 def parse_name( name ):
 	name = normalize_name( name )
@@ -52,7 +52,7 @@ def parse_name( name ):
 		if chars2.isalpha() and chars2 == chars2.upper():
 			break
 	else:
-		raise ValueError( u'invalid name: last name must be capitalized: {}'.format( name ) )
+		raise ValueError( 'invalid name: last name must be capitalized: {}'.format( name ) )
 	
 	# Find the last alpha character.
 	cLast = 'C'
@@ -65,10 +65,9 @@ def parse_name( name ):
 		# First two characters are capitalized.
 		# Assume the name is of the form LAST NAME First Name.
 		# Find the last upper-case letter preceding a space.  Assume that is the last char in the last_name.
-		j = 0
-		i = 0
-		while 1:
-			i = name.find( u' ', i )
+		i, j = 0, 0
+		while True:
+			i = name.find( ' ', i )
 			if i < 0:
 				if not j:
 					j = len(name)
@@ -82,10 +81,9 @@ def parse_name( name ):
 		# Last two characters are capitalized.
 		# Assume the name field is of the form First Name LAST NAME
 		# Find the last lower-case letter preceding a space.  Assume that is the last char in the first_name.
-		j = 0
-		i = 0
-		while 1:
-			i = name.find( u' ', i )
+		i, j = 0, 0
+		while True:
+			i = name.find( ' ', i )
 			if i < 0:
 				break
 			cPrev = name[i-1]
@@ -95,14 +93,31 @@ def parse_name( name ):
 		return name[:j], name[j:]
 	else:
 		# Assume name is of form First Last where the first name is separated by the first space.
-		i = name.find( u' ' )
+		i = name.find( ' ' )
 		if i < 0:
-			return u'', name
+			return '', name
 		else:
 			return name[:i], name[i:]
-	raise ValueError( u'invalid name: cannot parse first, last name: {}'.format( name ) )
+	raise ValueError( 'invalid name: cannot parse first, last name: {}'.format( name ) )
 
-class Result( object ):
+def abilityToNumeric( ability ):
+	if ability is not None:
+		if isinstance( ability, float ):
+			ability = int( ability )
+		ability = str( ability )
+		if re.search('[0-9]', ability):
+			# Use the number contained in the ability.
+			# This handles Cat 1, Cat 2 and M1, M2 cases.
+			return int( re.sub('[^0-9]', '', ability) )
+		
+		ability = ability.strip().upper()
+		if ability.startswith('GRADE'):
+			# Handle case of Grade A, Grade B, etc.
+			return ord(ability[-1:]) - ord('A') + 1
+		
+	return None
+
+class Result:
 	ByPoints, ByPosition = (0, 1)
 	
 	Fields = (
@@ -120,13 +135,14 @@ class Result( object ):
 		'category',
 		'age',
 		'date_of_birth',
+		'ability',
 		'points', 'position',
 		'tag',
 		'tagnum',
 		'row'
 	)
 	NumericFields = set([
-		'bib', 'age', 'points', 'position'
+		'bib', 'age', 'points', 'position', 'ability'
 	])
 	KeyFields = set([
 		'first_name', 'last_name',
@@ -143,8 +159,11 @@ class Result( object ):
 		for f in self.Fields:
 			setattr( self, f, kwargs.get(f, None) )
 			
+		if self.ability is not None:
+			self.ability = abilityToNumeric( self.ability )
+			
 		if self.license is not None:
-			self.license = u'{}'.format(self.license).strip()
+			self.license = '{}'.format(self.license).strip()
 			
 		if self.row:
 			try:
@@ -163,7 +182,7 @@ class Result( object ):
 				self.position = None
 				self.points = None
 			else:
-				self.position = non_digits.sub( u'', u'{}'.format(self.position) )
+				self.position = non_digits.sub( '', '{}'.format(self.position) )
 				try:
 					self.position = int(self.position)
 				except ValueError:
@@ -189,12 +208,12 @@ class Result( object ):
 		
 		# Get the 3-digit nation code from the nation name.
 		if self.nation:
-			self.nation = u'{}'.format(self.nation).replace( u'&', u'and' ).strip()
+			self.nation = '{}'.format(self.nation).replace( '&', 'and' ).strip()
 			self.nation = countryTranslations.get(self.nation.upper(), self.nation)
 			if not self.nation_code:
 				self.nation_code = ioc_from_country( self.nation )
 				if not self.nation_code:
-					raise KeyError( u'cannot find nation_code from nation: "{}" ({}, {})'.format(self.nation, self.last_name, self.first_name) )
+					raise KeyError( 'cannot find nation_code from nation: "{}" ({}, {})'.format(self.nation, self.last_name, self.first_name) )
 		
 		if self.nation_code:
 			self.nation_code = self.nation_code.upper()
@@ -206,16 +225,16 @@ class Result( object ):
 			try:
 				self.age = int(self.age)
 			except ValueError:
-				raise ValueError( u'invalid age: {} ({}, {})'.format(self.age, self.last_name, self.first_name) )
+				raise ValueError( 'invalid age: {} ({}, {})'.format(self.age, self.last_name, self.first_name) )
 				
 		assert self.date_of_birth is None or isinstance(self.date_of_birth, datetime.date), 'invalid Date of Birth'
 		
 		if self.uci_id is not None:
-			self.uci_id = u'{}'.format(self.uci_id).replace( u' ', '' )
+			self.uci_id = '{}'.format(self.uci_id).replace( ' ', '' )
 			try:
-				self.uci_id = u'{}'.format( int(self.uci_id) )
+				self.uci_id = '{}'.format( int(self.uci_id) )
 			except ValueError:
-				raise ValueError( u'uci_id: "{}" contains non-digits ({}, {})'.format(self.uci_id, self.last_name, self.first_name) )
+				raise ValueError( 'uci_id: "{}" contains non-digits ({}, {})'.format(self.uci_id, self.last_name, self.first_name) )
 			if self.uci_id == 0:
 				self.uci_id = None
 		
@@ -226,20 +245,20 @@ class Result( object ):
 		
 	def as_str( self, fields=None ):
 		fields = fields or self.Fields
-		data = [ u'{}'.format(getattr(self,f).upper() if f == 'last_name' else getattr(self,f)) for f in fields if getattr(self,f,None) is not None and f != 'row' ]
+		data = [ '{}'.format(getattr(self,f).upper() if f == 'last_name' else getattr(self,f)) for f in fields if getattr(self,f,None) is not None and f != 'row' ]
 		for i in range(len(data)):
 			d = data[i]
-			for t, fmt in ((int, u'{}'), (float, u'{:.3f}')):
+			for t, fmt in ((int, '{}'), (float, '{:.3f}')):
 				try:
 					d = fmt.format(t(d))
 					break
 				except ValueError:
 					pass
 			else:
-				d = u'"{}"'.format( d )
+				d = '"{}"'.format( d )
 			data[i] = d
 			
-		return u','.join( data )
+		return ','.join( data )
 		
 	def as_list( self, fields=None ):
 		lines = []
@@ -251,6 +270,7 @@ class Result( object ):
 			'license',
 			'nation',
 			'nation_code',
+			'ability',
 			'points', 'position',
 			'tag',
 			'tagnum',
@@ -265,15 +285,15 @@ class Result( object ):
 						v = v.upper()
 					if f in ('first_name', 'last_name'):
 						if f == 'last_name' and fLast == 'first_name':
-							lines[-1] += u' {}'.format(v)
+							lines[-1] += ' {}'.format(v)
 						else:
-							lines.append( u'{}'.format(v) )
+							lines.append( '{}'.format(v) )
 					else:
 						if f == 'team':
-							v = u'{}'.format(v)
+							v = '{}'.format(v)
 							if len(v) > 30:
-								v = v[:27] + u'...'
-						lines.append( u'{}={}'.format(f, v) )
+								v = v[:27] + '...'
+						lines.append( '{}={}'.format(f, v) )
 				fLast = f
 		fLast = None
 		for f in fields:
@@ -284,17 +304,17 @@ class Result( object ):
 						v = v.upper()
 					if f in ('first_name', 'last_name'):
 						if f == 'last_name' and fLast == 'first_name':
-							lines[-1] += u' {}'.format(v)
+							lines[-1] += ' {}'.format(v)
 						else:
-							lines.append( u'{}'.format(v) )
+							lines.append( '{}'.format(v) )
 					else:
-						lines.append( u'{}={}'.format(f, v) )
+						lines.append( '{}={}'.format(f, v) )
 				fLast = f
 		return lines
 	
 	@property
 	def full_name( self ):
-		return u'{} {}'.format( self.first_name, self.last_name )
+		return '{} {}'.format( self.first_name, self.last_name )
 	
 	def get_key( self ):
 		if self.cmp_policy == self.ByPoints:
@@ -316,42 +336,42 @@ class Result( object ):
 reAlpha = re.compile( '[^A-Z]+' )
 # Header aliases.
 header_sub = {
-	u'RANK':			u'POSITION',
-	u'POS':				u'POSITION',
-	u'PLACE':			u'POSITION',
-	u'RIDERRANK':		u'POSITION',
-	u'RIDERPOS':		u'POSITION',
-	u'RIDERPLACE':		u'POSITION',
+	'RANK':			'POSITION',
+	'POS':			'POSITION',
+	'PLACE':		'POSITION',
+	'RIDERRANK':	'POSITION',
+	'RIDERPOS':		'POSITION',
+	'RIDERPLACE':	'POSITION',
 	
-	u'NUM':				u'BIB',
-	u'BIBNUMBER':		u'BIB',
-	u'RIDERBIB':		u'BIB',
-	u'RIDERNUM':		u'BIB',
+	'NUM':			'BIB',
+	'BIBNUMBER':	'BIB',
+	'RIDERBIB':		'BIB',
+	'RIDERNUM':		'BIB',
 	
-	u'LIC':				u'LICENSE',
-	u'LICENSENUMBER':	u'LICENSE',
-	u'LICNUMBER':		u'LICENSE',
-	u'RIDERLICENSE':	u'LICENSE',
+	'LIC':			'LICENSE',
+	'LICENSENUMBER':'LICENSE',
+	'LICNUMBER':	'LICENSE',
+	'RIDERLICENSE':	'LICENSE',
 	
-	u'DOB':				u'DATEOFBIRTH',
+	'DOB':				'DATEOFBIRTH',
 	
-	u'FIRST':			u'FIRSTNAME',
-	u'FNAME':			u'FIRSTNAME',
-	u'RIDERFIRSTNAME':	u'FIRSTNAME',
+	'FIRST':			'FIRSTNAME',
+	'FNAME':			'FIRSTNAME',
+	'RIDERFIRSTNAME':	'FIRSTNAME',
 	
-	u'LAST':			u'LASTNAME',
-	u'LNAME':			u'LASTNAME',
-	u'RIDERLASTNAME':	u'LASTNAME',
+	'LAST':			'LASTNAME',
+	'LNAME':		'LASTNAME',
+	'RIDERLASTNAME':'LASTNAME',
 	
-	u'PROV':			u'STATEPROV',
-	u'PROVINCE':		u'STATEPROV',
-	u'STATE':			u'STATEPROV',
+	'PROV':			'STATEPROV',
+	'PROVINCE':		'STATEPROV',
+	'STATE':		'STATEPROV',
 
-	u'TOTALPTS':		u'POINTS',
+	'TOTALPTS':		'POINTS',
 }
 def scrub_header( h ):
 	# For slash-separated headers, only the first word is used.
-	h = reAlpha.sub( '', Utils.removeDiacritic(u'{}'.format(h).split('/', maxsplit=1)[0]).upper() )
+	h = reAlpha.sub( '', Utils.removeDiacritic('{}'.format(h).split('/', maxsplit=1)[0]).upper() )
 	return header_sub.get(h, h)
 
 def soundalike_match( s1, s2 ):
@@ -359,7 +379,7 @@ def soundalike_match( s1, s2 ):
 	dmp2 = doublemetaphone( s2.replace('-','').encode() )
 	return any( v in dmp1 for v in dmp2 )
 	
-class FindResult( object ):
+class FindResult:
 	NoMatch, Success, SuccessSoundalike, MultiMatch = range(4)
 
 	def __init__( self, search, matches, source, soundalike ):
@@ -382,10 +402,10 @@ class FindResult( object ):
 	
 	def get_value( self ):
 		if not self.matches:
-			return u''
+			return ''
 		if len(self.matches) == 1:
 			return self.matches[0].get_value()
-		return u"\u2605" * len(self.matches)
+		return "\u2605" * len(self.matches)
 	
 	def get_status( self ):
 		if not self.matches:
@@ -397,7 +417,7 @@ class FindResult( object ):
 		return self.MultiMatch
 	
 	def __repr__( self ):
-		return u'{}'.format(self.get_value())
+		return '{}'.format(self.get_value())
 	
 	def get_name_status( self ):
 		if not self.Success or len(self.matches) != 1:
@@ -417,11 +437,11 @@ class FindResult( object ):
 			self.MultiMatch:		_('Multiple Matches'),
 			self.NoMatch:			_('No Match'),
 		}[self.get_status()]
-		matches = u'\n'.join( u', '.join(r.as_list(fields)) for r in self.matches )
+		matches = '\n'.join( ', '.join(r.as_list(fields)) for r in self.matches )
 		
-		message = u'{matchName}: "{sheet_name}"\n\n{registration}:\n{registrationData}\n\n{matches}:\n{matchesData}'.format(
+		message = '{matchName}: "{sheet_name}"\n\n{registration}:\n{registrationData}\n\n{matches}:\n{matchesData}'.format(
 			matchName=matchName, sheet_name=self.source.sheet_name,
-			registration=_('Registration'), registrationData=u', '.join(self.search.as_list(fields)),
+			registration=_('Registration'), registrationData=', '.join(self.search.as_list(fields)),
 			matches=_('Matches'), matchesData=matches,
 		)
 		return message
@@ -430,21 +450,21 @@ def validate_uci_id( uci_id ):
 	if not uci_id:
 		return
 		
-	uci_id = u'{}'.format(uci_id).upper().replace(u' ', u'')
+	uci_id = '{}'.format(uci_id).upper().replace(' ', '')
 	
 	if not uci_id.isdigit():
-		raise ValueError( u'uci id "{}" must be all digits'.format(uci_id) )
+		raise ValueError( 'uci id "{}" must be all digits'.format(uci_id) )
 	
 	if uci_id.startswith('0'):
-		raise ValueError( u'uci id "{}" must not start with zero'.format(uci_id) )
+		raise ValueError( 'uci id "{}" must not start with zero'.format(uci_id) )
 	
 	if len(uci_id) != 11:
-		raise ValueError( u'uci id "{}" must be 11 digits'.format(uci_id) )
+		raise ValueError( 'uci id "{}" must be 11 digits'.format(uci_id) )
 		
 	if int(uci_id[:-2]) % 97 != int(uci_id[-2:]):
-		raise ValueError( u'uci id "{}" check digit error'.format(uci_id) )
+		raise ValueError( 'uci id "{}" check digit error'.format(uci_id) )
 
-class Source( object ):
+class Source:
 	Indices = (
 		'by_license', 'by_uci_id',
 		'by_last_name', 'by_first_name',
@@ -517,7 +537,7 @@ class Source( object ):
 				except IndexError:
 					pass
 			
-			# If points and position are not specified, use the row_number as the position.
+			# If both points and position are not specified, use the row_number as the position.
 			if 'points' not in row_fields and 'position' not in row_fields:
 				row_fields['position'] = row_number + 1
 				
@@ -526,22 +546,22 @@ class Source( object ):
 			try:
 				result = Result( **row_fields )
 			except Exception as e:
-				errors.append( u'{} - row {} - {}'.format(self.sheet_name, row_number+1, e) )
+				errors.append( '{} - row {} - {}'.format(self.sheet_name, row_number+1, e) )
 				continue
 				
 			if 'uci_id' in header_map:
 				try:
 					validate_uci_id( result.uci_id )
 				except Exception as e:
-					errors.append( u'{} - row {} - Warning: {}'.format(self.sheet_name, row_number+1, e) )
+					errors.append( '{} - row {} - Warning: {}'.format(self.sheet_name, row_number+1, e) )
 			
 			result.row_number = row_number
 			
 			if 'license' in header_map and not result.license:
-				errors.append( u'{} - row {} - Warning: {} ({}, {})'.format(self.sheet_name, row_number+1, u'missing license', result.last_name, result.first_name) )
+				errors.append( '{} - row {} - Warning: {} ({}, {})'.format(self.sheet_name, row_number+1, 'missing license', result.last_name, result.first_name) )
 		
 			if 'uci_id' in header_map and not result.uci_id:
-				errors.append( u'{} - row {} - Warning: {} ({}, {})'.format(self.sheet_name, row_number+1, u'missing UCI ID', result.last_name, result.first_name) )
+				errors.append( '{} - row {} - Warning: {} ({}, {})'.format(self.sheet_name, row_number+1, 'missing UCI ID', result.last_name, result.first_name) )
 		
 			self.add( result )
 		
@@ -728,7 +748,7 @@ class Source( object ):
 		
 		return FindResult( search, [], self, False )
 	
-class ResultCollection( object ):
+class ResultCollection:
 	def __init__( self ):
 		self.sources = []
 		
@@ -757,7 +777,7 @@ if __name__ == '__main__':
 				p_first_set = s.by_mp_first_name[p_first]
 				p_last_first_set = p_last_set & p_first_set
 				if len(p_last_first_set) > 1:
-					print ( ', '.join( u'({}, {}, {})'.format(
+					print ( ', '.join( '({}, {}, {})'.format(
 							Utils.removeDiacritic(rr.full_name), Utils.removeDiacritic(rr.nation_code), rr.age,
 						)
 						for rr in p_last_first_set ) )

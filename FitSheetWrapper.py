@@ -17,7 +17,7 @@ class FitSheetWrapper(object):
 		self.widths = {}
 		self.heights = {}
 
-	def write(self, r, c, label=u'', *args, **kwargs):
+	def write(self, r, c, label='', *args, **kwargs):
 		if 'bold' in kwargs:
 			isBold = True
 			del kwargs['bold']
@@ -30,7 +30,7 @@ class FitSheetWrapper(object):
 		elif isinstance(label, datetime.time):
 			label = '00:00:00'
 		else:
-			label = Utils.removeDiacritic( u'{}'.format(label) )
+			label = Utils.removeDiacritic( '{}'.format(label) )
 		width = min( len(label), 65535 )
 		if width > self.widths.get(c, 0):
 			self.widths[c] = width

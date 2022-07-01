@@ -32,7 +32,7 @@ class ErrorDialog( wx.Dialog ):
 		wx.Dialog.__init__( self, parent, id, title, size=size, style=wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX )
 		bs = wx.BoxSizer( wx.VERTICAL )
 		self.text = wx.TextCtrl( self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_DONTWRAP )
-		self.text.SetValue( u'\n'.join( u'{}'.format(e).replace( u"u'", u'' ).replace(u"'", u'') for e in errors ) )
+		self.text.SetValue( '\n'.join( '{}'.format(e).replace( "u'", '' ).replace("'", '') for e in errors ) )
 		bs.Add( self.text, 1, flag=wx.EXPAND|wx.ALL, border=4 )
 		self.okButton = wx.Button( self, id=wx.ID_OK )
 		self.okButton.SetDefault()
@@ -161,7 +161,7 @@ class MainWin( wx.Frame ):
 		self.tutorialButton = wx.Button( self, label=_('Help/Tutorial...') )
 		self.tutorialButton.Bind( wx.EVT_BUTTON, self.onTutorial )
 		vs.Add( self.tutorialButton, flag=wx.ALL, border=4 )
-		branding = wx.adv.HyperlinkCtrl( self, id=wx.ID_ANY, label=u"Powered by CrossMgr", url=u"http://www.sites.google.com/site/crossmgrsoftware/" )
+		branding = wx.adv.HyperlinkCtrl( self, id=wx.ID_ANY, label="Powered by CrossMgr", url=u"http://www.sites.google.com/site/crossmgrsoftware/" )
 		vs.Add( branding, flag=wx.ALL, border=4 )
 		horizontalControlSizer.Add( vs )
 
@@ -185,7 +185,7 @@ class MainWin( wx.Frame ):
 		
 		self.grid = ReorderableGrid( self )
 		self.grid.CreateGrid( 0, 1 )
-		self.grid.SetColLabelValue( 0, u'' )
+		self.grid.SetColLabelValue( 0, '' )
 		self.grid.EnableDragRowSize( False )
 		self.grid.Bind( wx.grid.EVT_GRID_CELL_LEFT_CLICK, self.onGridCellClick )
 		#self.grid.Bind( wx.EVT_MOTION, self.onMouseOver )
@@ -256,13 +256,13 @@ class MainWin( wx.Frame ):
 			wx.adv.AboutBox(info, self)
 
 	def onTutorial( self, event ):
-		if not Utils.MessageOKCancel( self, u"\n".join( [
+		if not Utils.MessageOKCancel( self, "\n".join( [
 					_("Launch the CallupSeedingMgr Tutorial."),
 					_("This open a sample Excel input file created into your home folder."),
 					_("This data in this sheet is made-up, although it does include some current rider's names."),
-					u"",
+					"",
 					_("It will also open the Tutorial page in your browser.  If you can't see your browser, make sure you bring to the front."),
-					u"",
+					"",
 					_("Continue?"),
 					] )
 				):
@@ -271,8 +271,8 @@ class MainWin( wx.Frame ):
 			fname_excel = MakeExampleExcel()
 			self.fileBrowse.SetValue( fname_excel )
 		except Exception as e:
-			Utils.MessageOK( self, u'{}\n\n{}\n\n{}'.format(
-					u'Problem creating Excel sheet.',
+			Utils.MessageOK( self, '{}\n\n{}\n\n{}'.format(
+					'Problem creating Excel sheet.',
 					e,
 					_('If the Excel file is open, please close it and try again')
 				)
@@ -323,7 +323,7 @@ class MainWin( wx.Frame ):
 			event.Skip()
 			return
 		
-		message = u'{}\n\n{}'.format(
+		message = '{}\n\n{}'.format(
 			v.get_message(),
 			_('Make changes in the Spreadsheet (if necessary), then press "Update" to refresh the screen.'),
 		)
@@ -348,7 +348,7 @@ class MainWin( wx.Frame ):
 		if status == v.NoMatch:
 			return
 		
-		message = u'{}\n\n{}'.format(
+		message = '{}\n\n{}'.format(
 			v.get_message(),
 			_('Make changes in the Spreadsheet (if necessary), then press "Update" to refresh the screen.'),
 		)
@@ -416,11 +416,11 @@ class MainWin( wx.Frame ):
 			fields = source.get_ordered_fields()
 			if add_value_field and source.get_cmp_policy_field():
 				fields = [source.get_cmp_policy_field()] + list(fields)
-			self.sourceList.SetItem( idx, 1, u', '.join( make_title(f) for f in fields ) )
+			self.sourceList.SetItem( idx, 1, ', '.join( make_title(f) for f in fields ) )
 			match_fields = source.get_match_fields(sources[-1]) if source != sources[-1] else []
-			self.sourceList.SetItem( idx, 2, u', '.join( make_title(f) for f in match_fields ) )
-			self.sourceList.SetItem( idx, 3, u'{}'.format(len(source.results)) )
-			self.sourceList.SetItem( idx, 4, u'{}'.format(len(errors)) )
+			self.sourceList.SetItem( idx, 2, ', '.join( make_title(f) for f in match_fields ) )
+			self.sourceList.SetItem( idx, 3, '{}'.format(len(source.results)) )
+			self.sourceList.SetItem( idx, 4, '{}'.format(len(errors)) )
 		
 		insert_source_info( sources[-1], errors[-1], False )
 		for i, source in enumerate(sources[:-1]):
@@ -438,7 +438,7 @@ class MainWin( wx.Frame ):
 		try:
 			self.fname = (fnameNew or event.GetString() or self.fileBrowse.GetValue())
 		except:
-			self.fname = u''
+			self.fname = ''
 		
 		if not self.fname:
 			Utils.MessageOK( self, _('Missing Excel file.  Please select an Excel file.'), _('Missing Excel File') )
@@ -452,7 +452,7 @@ class MainWin( wx.Frame ):
 			with open(self.fname, 'rb') as f:
 				pass
 		except Exception as e:
-			Utils.MessageOK( self, u'{}:\n\n    {}\n\n{}'.format( _('Cannot Open Excel file'), self.fname, e), _('Cannot Open Excel File') )
+			Utils.MessageOK( self, '{}:\n\n    {}\n\n{}'.format( _('Cannot Open Excel file'), self.fname, e), _('Cannot Open Excel File') )
 			self.setUpdated( False )
 			return
 		
@@ -473,7 +473,7 @@ class MainWin( wx.Frame ):
 			)
 		except Exception as e:
 			traceback.print_exc()
-			Utils.MessageOK( self, u'{}:\n\n    {}\n\n{}'.format( _('Excel File Error'), self.fname, e), _('Excel File Error') )
+			Utils.MessageOK( self, '{}:\n\n    {}\n\n{}'.format( _('Excel File Error'), self.fname, e), _('Excel File Error') )
 			self.setUpdated( False )
 			return
 		
@@ -499,7 +499,7 @@ class MainWin( wx.Frame ):
 		if os.path.isfile( fname_excel ):
 			if not Utils.MessageOKCancel(
 						self,
-						u'"{}"\n\n{}'.format(fname_excel, _('File exists.  Replace?')),
+						'"{}"\n\n{}'.format(fname_excel, _('File exists.  Replace?')),
 						_('Output Excel File Exists'),
 					):
 				return
@@ -518,7 +518,7 @@ class MainWin( wx.Frame ):
 		except Exception as e:
 			traceback.print_exc()
 			Utils.MessageOK( self,
-				u'{}: "{}"\n\n{}\n\n"{}"'.format(
+				'{}: "{}"\n\n{}\n\n"{}"'.format(
 						_("Write Failed"),
 						e,
 						_("If you have this file open, close it and try again."),
