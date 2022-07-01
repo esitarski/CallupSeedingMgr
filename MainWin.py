@@ -145,6 +145,7 @@ class MainWin( wx.Frame ):
 		)
 		self.cycleLabel = wx.StaticText(self, label=_('Cycle Criteria'))
 		self.cycle = wx.Choice( self, choices=(_('None'), _('Last 2'), _('Last 3'), _('Last 4')) )
+		self.cycle.SetSelection( 0 )
 		self.cycle.Bind( wx.EVT_CHOICE, lambda w: self.doUpdate() )
 		cycleSizer = wx.BoxSizer( wx.HORIZONTAL )
 		cycleSizer.Add( self.cycleLabel, flag=wx.ALIGN_CENTRE_VERTICAL )
