@@ -263,7 +263,7 @@ Where 1 and A are the highest ability.
 
 Now, make sure you also have a __Points__ or __Position__ column to indicate the rank of the rider within that ability.  If no __Points__ or __Position__ column is present, __CallupSeedingMgr__ will use the row number as the position.
 
-__CallupSeedingMgr__ will then group the riders by __Ability__, then by __Points__ (or __Position__) within that ability.
+__CallupSeedingMgr__ will then group the riders by __Ability__, then by __Points__ (or __Position__) within each ability.
 
 This feature is very useful to rank riders competing in an age-based category from ability-based results.
 
@@ -271,9 +271,9 @@ Of course, ability criteria can be combined with any other sheets and ranking cr
 
 # Cycling by Criteria
 
-Sometimes you need to combine the results from different championships or series, and the only way is to cycle them.
+Sometimes you need to combine the results from independent championships or series, and the only way is to cycle them.
 
-For example, say I want to do callups for a UCI-category (age-based) event with the following criteria:
+For example, say I need to do callups for a UCI-category (age-based) event with the following criteria:
 
 1. Previous National Champion
 1. UCI Points
@@ -285,7 +285,7 @@ We want the Previous National Champion first, followed by decreasing riders' UCI
 then we want to alternate between the Western Region and the Eastern Region.
 We can easily set up our spreadsheet for all of these criteria, but we need an additional step.
 
-We must tell __CallupSeedingMgr__ about the cycling by setting __Cycle Criteria__.  In this case, we set __Cycle Criteria__ to __Last 2__ to tell it that we want to cycle between the criteria in the last 2 sheets.
+We must tell __CallupSeedingMgr__ about the cycling by setting __Cycle Criteria__.  In this case, we set __Cycle Criteria__ to __Last 2__ to tell it that we want to cycle callups between the criteria in the last 2 sheets.
 
 In this example,
 it will take a ranked rider from "Western Region", then a ranked rider from "Eastern Region" and so on until one of the sets is empty.
