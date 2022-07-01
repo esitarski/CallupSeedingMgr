@@ -223,6 +223,7 @@ Age|Converted|Used to get an incomplete DOB
 Nation|Informational|Text of rider's nation.
 Nation Code|Informational|Three-character nation code.
 Date of Birth,DOB|Informational|Must be an Excel date.
+Ability|Criteria|The rider's ability classification
 Points|Criteria|The number of points awarded to the rider by that criteria.
 Position|Criteria|The finish position of the rider by that criteria.
 Rank|Criteria|Alias for __Position__
@@ -247,3 +248,52 @@ When matching fields, accents are removed, non-ascii characters are removed as a
 * Last-Name
 * Last-Name*
 * last_name
+
+# Ability Criteria
+
+Sometimes you need to rank riders from a number of ability categories.  __CallupSeedingMgr__ supports this as follows:
+
+In one or more of your sheets, create an __Ability__ column.  In the __Ability__ column, __CallupSeedingMgr__ recognizes:
+
+* numbers on their own (1, 2, 3, 4)
+* text followed by a number (Cat1, Cat2... M1, M2...).  Spaces don't matter.
+* "Grade" with a letter (Grade A, Grade B, ...).  Spaces don't matter.
+
+Where 1 and A are the highest ability.
+
+Now, make sure you also have a __Points__ or __Position__ column to indicate the rank of the rider within that ability.  If no __Points__ or __Position__ column is present, __CallupSeedingMgr__ will use the row number as the position.
+
+__CallupSeedingMgr__ will then group the riders by __Ability__, then by __Points__ (or __Position__) within that ability.
+
+This feature is very useful to rank riders competing in an age-based category from ability-based results.
+
+Of course, ability criteria can be combined with any other sheets and ranking criteria.
+
+# Cycling by Criteria
+
+Sometimes you need to combine the results from different championships or series, and the only way is to cycle them.
+
+For example, say I want to do callups for a UCI-category (age-based) event with the following criteria:
+
+1. Previous National Champion
+1. UCI Points
+1. National Series Points
+1. Western Region Series Points (ability-based)
+1. Eastern Region Series Points (age-based)
+
+We want the Previous National Champion first, followed by decreasing riders' UCI points, and if none, by decreasing National points, and if none,
+then we want to alternate between the Western Region and the Eastern Region.
+We can easily set up our spreadsheet for all of these criteria, but we need an additional step.
+
+We must tell __CallupSeedingMgr__ about the cycling by setting __Cycle Criteria__.  In this case, we set __Cycle Criteria__ to __Last 2__ to tell it that we want to cycle between the criteria in the last 2 sheets.
+
+In this example,
+it will take a ranked rider from "Western Region", then a ranked rider from "Eastern Region" and so on until one of the sets is empty.
+Then it will list out riders in that set.
+
+In general, if it has more then 2 sets to cycle through, it will keep cycling on the remaining elements as sets become empty.
+
+Cycling starts with the first sheet.  In this example, if you want to start with "Eastern Region", change the order of the sheets in Excel.
+
+__Cycle Criteria__ can cycle up to the last 4 sheets in your Excel.
+

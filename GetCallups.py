@@ -65,32 +65,34 @@ def GetCallups( fname, soundalike=True, useUciId=True, useLicense=True, callback
 		noCriteria = []
 		# Separate the cycling criteria into groups.
 		for row, reg in enumerate(callup_order):
-			# Nothing matches anywhere - no criteria.
+			
+			# Nothing matches anything - add to no criteria so we can insert at the end.
 			if all( r.get_status() == r.NoMatch for r in reg.result_vector[:-1] ):
 				noCriteria.append( reg )
 				continue
 			
-			iCycleLastBegin = len(reg.result_vector) - 1 - cycleLast
+			iCycleLastEnd = len(reg.result_vector) - 1
+			iCycleLastBegin = max(0, iCycleLastEnd - cycleLast)
+			iCycleMax = iCycleLastEnd - iCycleLastBegin
 			
-			# If anyting matches before cycleLast, this isn't in a cycle group.
+			# If any criteria matches before cycleLast, this isn't in a cycle group.  Add it and ignore.
 			if any( r.is_matched() for r in reg.result_vector[:iCycleLastBegin] ):
 				callup_order_cycle.append( reg )
 				continue
 			
 			# Find the cycle group for this result.
-			matched = False
-			for iLast in range(cycleLast):
+			for iLast in range(iCycleMax):
 				if reg.result_vector[iCycleLastBegin+iLast].is_matched():
 					cycleGroups[iLast].append( reg )
-					matched = True
 					break
-			assert matched
+			else:
+				callup_order_cycle.append( reg )
 			
 		# Remove empty cycle groups.
 		cycleGroups = [cg for cg in cycleGroups if cg]
 
-		# Cycle through the groups until there is nothing left.
-		# Reverse the groups so we can process them efficiently.
+		# Cycle through the groups until everyone has been inserted.
+		# Reverse the groups so we can process them efficiently with pop().
 		for cg in cycleGroups:
 			cg.reverse()
 		
